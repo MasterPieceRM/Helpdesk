@@ -31,7 +31,6 @@ def connect():
         except Exception as e:
             print(f"[Worker] Connection failed: {e}. Retrying in 5 seconds...")
             time.sleep(5)
-            time.sleep(5)
 
 
 def callback(ch, method, properties, body):

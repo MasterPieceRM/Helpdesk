@@ -1,3 +1,4 @@
+import os
 import requests
 import streamlit as st
 
@@ -5,11 +6,11 @@ import streamlit as st
 # Config
 # ---------------------------
 
-API_URL = "http://backend:8000"
+AUTH_URL = os.getenv("AUTH_URL", "http://auth-service:8001")
+API_URL = os.getenv("API_URL", "http://ticket-api:8000")
 
 KEYCLOAK_BASE_URL = "http://keycloak:8080"
-KEYCLOAK_REALM = "helpdesk"              # change if your realm has another name
-# change if your client ID is different
+KEYCLOAK_REALM = "helpdesk"
 KEYCLOAK_CLIENT_ID = "helpdesk-frontend"
 
 TOKEN_URL = f"{KEYCLOAK_BASE_URL}/realms/{KEYCLOAK_REALM}/protocol/openid-connect/token"
@@ -74,7 +75,7 @@ if "access_token" not in st.session_state:
 
                 # Ask backend who we are
                 me_resp = requests.get(
-                    f"{API_URL}/me", headers=get_auth_headers())
+                    f"{AUTH_URL}/me", headers=get_auth_headers())
                 if me_resp.status_code == 200:
                     me_data = me_resp.json()
                     st.session_state["username"] = me_data.get("username")
@@ -115,7 +116,7 @@ if "access_token" not in st.session_state:
                         "first_name": reg_first_name or None,
                         "last_name": reg_last_name or None,
                     }
-                    resp = requests.post(f"{API_URL}/register", json=payload)
+                    resp = requests.post(f"{AUTH_URL}/register", json=payload)
                     if resp.status_code == 200:
                         st.success(
                             "Account created successfully! You can now log in.")
@@ -380,7 +381,7 @@ if is_admin:
                         "last_name": support_last_name or None,
                     }
                     resp = requests.post(
-                        f"{API_URL}/admin/users/support",
+                        f"{AUTH_URL}/admin/users/support",
                         json=payload,
                         headers=get_auth_headers(),
                     )

@@ -1,13 +1,12 @@
-from fastapi import FastAPI, Depends, HTTPException
 from contextlib import asynccontextmanager
+from fastapi import FastAPI, Depends, HTTPException
 from typing import List
-from . import models, db, schemas, crud, deps, cache, messaging, auth, keycloak_admin
+from . import models, db, schemas, crud, deps, cache, messaging
 from .auth import CurrentUser, get_current_user, require_roles
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Wait for database to be available and create tables
     db.wait_for_db()
     with db.engine.begin() as conn:
         conn.exec_driver_sql("SELECT pg_advisory_lock(123456789)")
@@ -26,50 +25,6 @@ def health_check():
     return {"status": "ok"}
 
 
-@app.post("/register")
-def register_user(user: schemas.UserCreate):
-    """
-    Register a new user in Keycloak.
-    This endpoint is public (no authentication required).
-    """
-    success, message = keycloak_admin.create_user(
-        username=user.username,
-        email=user.email,
-        password=user.password,
-        first_name=user.first_name,
-        last_name=user.last_name,
-    )
-
-    if not success:
-        raise HTTPException(status_code=400, detail=message)
-
-    return {"message": message}
-
-
-@app.post("/admin/users/support")
-def create_support_user(
-    user: schemas.SupportUserCreate,
-    current_user: CurrentUser = Depends(require_roles(["admin"])),
-):
-    """
-    Create a new support user in Keycloak.
-    This endpoint requires admin role.
-    """
-    success, message = keycloak_admin.create_user(
-        username=user.username,
-        email=user.email,
-        password=user.password,
-        first_name=user.first_name,
-        last_name=user.last_name,
-        role="support",
-    )
-
-    if not success:
-        raise HTTPException(status_code=400, detail=message)
-
-    return {"message": f"Support user '{user.username}' created successfully"}
-
-
 @app.post("/notifications", response_model=schemas.NotificationOut)
 def create_notification(
     notification: schemas.NotificationCreate,
@@ -79,7 +34,6 @@ def create_notification(
     Create a notification for a ticket.
     Called by the worker service (internal API).
     """
-    # Verify ticket exists
     ticket = crud.get_ticket(db_session, notification.ticket_id)
     if not ticket:
         raise HTTPException(status_code=404, detail="Ticket not found")
@@ -96,24 +50,17 @@ def get_ticket_notifications(
     current_user: CurrentUser = Depends(get_current_user),
     db_session=Depends(deps.get_db),
 ):
-    """
-    Get all notifications for a specific ticket.
-    """
-    # Verify ticket exists
     ticket = crud.get_ticket(db_session, ticket_id)
     if not ticket:
         raise HTTPException(status_code=404, detail="Ticket not found")
 
-    # Check permissions based on role
     roles = current_user.roles
     if "admin" not in roles:
         if "support" in roles:
-            # Support can see notifications for tickets assigned to them
             if ticket.assigned_to != current_user.username:
                 raise HTTPException(
                     status_code=403, detail="Not authorized to view this ticket's notifications")
         elif "client" in roles:
-            # Clients can only see notifications for their own tickets
             if ticket.created_by != current_user.username:
                 raise HTTPException(
                     status_code=403, detail="Not authorized to view this ticket's notifications")
@@ -131,7 +78,6 @@ def list_tickets(
 ):
     roles = current_user.roles
 
-    # Admin: sees everything, keep Redis cache for the global list
     if "admin" in roles:
         cached = cache.get_ticket_list_from_cache()
         if cached is not None:
@@ -147,23 +93,16 @@ def list_tickets(
         cache.set_ticket_list_cache(to_cache)
         return tickets
 
-    # Support: only tickets assigned to self (no shared cache, since list is user-specific)
     if "support" in roles:
         print(
             f"[AUTH] Support user {current_user.username} listing own assigned tickets")
-        tickets = crud.get_tickets_by_assignee(
-            db_session, current_user.username)
-        return tickets
+        return crud.get_tickets_by_assignee(db_session, current_user.username)
 
-    # Client: only own tickets (created_by)
     if "client" in roles:
         print(
             f"[AUTH] Client user {current_user.username} listing own tickets")
-        tickets = crud.get_tickets_by_creator(
-            db_session, current_user.username)
-        return tickets
+        return crud.get_tickets_by_creator(db_session, current_user.username)
 
-    # Anything else: forbidden
     raise HTTPException(status_code=403, detail="Unknown or unauthorized role")
 
 
@@ -174,7 +113,6 @@ def create_ticket(
         require_roles(["client", "support", "admin"])),
     db_session=Depends(deps.get_db),
 ):
-    # Force created_by = current_user.username (ignore whatever comes from UI)
     ticket_data = ticket.model_dump()
     ticket_data["created_by"] = current_user.username
 
@@ -214,18 +152,15 @@ def get_ticket(
 
     roles = current_user.roles
 
-    # Admin can see any ticket
     if "admin" in roles:
         return db_ticket
 
-    # Support: see only tickets assigned to self
     if "support" in roles:
         if db_ticket.assigned_to == current_user.username:
             return db_ticket
         raise HTTPException(
             status_code=403, detail="Not allowed to view this ticket")
 
-    # Client: see only own tickets
     if "client" in roles:
         if db_ticket.created_by == current_user.username:
             return db_ticket
@@ -242,12 +177,10 @@ def update_ticket(
     current_user: CurrentUser = Depends(require_roles(["support", "admin"])),
     db_session=Depends(deps.get_db),
 ):
-    # Get current state
     existing = crud.get_ticket(db_session, ticket_id)
     if not existing:
         raise HTTPException(status_code=404, detail="Ticket not found")
 
-    # Support: can only modify tickets assigned to themselves
     if "support" in current_user.roles and "admin" not in current_user.roles:
         if existing.assigned_to != current_user.username:
             raise HTTPException(
@@ -258,7 +191,6 @@ def update_ticket(
     previous_status = existing.status
     previous_assigned_to = existing.assigned_to
 
-    # Perform update
     updated = crud.update_ticket(db_session, ticket_id, ticket_update)
     if not updated:
         raise HTTPException(status_code=404, detail="Ticket not found")
@@ -274,7 +206,6 @@ def update_ticket(
         "assigned_to": updated.assigned_to,
     }
 
-    # Status changed
     if previous_status != updated.status:
         try:
             messaging.publish_ticket_event("ticket_status_changed", payload)
@@ -293,7 +224,6 @@ def update_ticket(
             except Exception as e:
                 print(f"[MSG] Error publishing ticket_closed: {e}")
 
-    # Assignment changed
     if previous_assigned_to != updated.assigned_to:
         try:
             messaging.publish_ticket_event("ticket_assigned", payload)
@@ -335,11 +265,3 @@ def delete_ticket(
         print(f"[MSG] Error publishing ticket_deleted: {e}")
 
     return {"detail": f"Ticket {ticket_id} deleted"}
-
-
-@app.get("/me")
-def read_me(current_user: CurrentUser = Depends(get_current_user)):
-    return {
-        "username": current_user.username,
-        "roles": current_user.roles,
-    }

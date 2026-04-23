@@ -1,35 +1,37 @@
-version: "3.9"
-
 services:
-  backend:
-    image: helpdesk-distributed-backend:latest
+  auth-service:
+    image: helpdesk-distributed-auth-service:latest
     environment:
-      # DB
+      KEYCLOAK_URL: http://keycloak:8080
+      KEYCLOAK_REALM: helpdesk
+    ports:
+      - "8001:8001"
+    networks:
+      - helpdesk-net
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+
+  ticket-api:
+    image: helpdesk-distributed-ticket-api:latest
+    environment:
       POSTGRES_HOST: db
       POSTGRES_PORT: 5432
       POSTGRES_DB: helpdesk
       POSTGRES_USER: helpdesk
       POSTGRES_PASSWORD: helpdesk
 
-      # Redis
       REDIS_HOST: redis
       REDIS_PORT: 6379
 
-      # RabbitMQ
       RABBITMQ_HOST: rabbitmq
       RABBITMQ_USER: user
       RABBITMQ_PASS: password
-
-      # Keycloak (if your backend reads anything from env)
-      KEYCLOAK_BASE_URL: http://keycloak:8080
-      KEYCLOAK_REALM: helpdesk
-
     networks:
       - helpdesk-net
-
     ports:
       - "8000:8000"
-
     deploy:
       replicas: 2
       restart_policy:
@@ -43,11 +45,8 @@ services:
   frontend:
     image: helpdesk-distributed-frontend:latest
     environment:
-      # Optional: if your Streamlit app reads these
-      API_URL: http://backend:8000
-      KEYCLOAK_BASE_URL: http://keycloak:8080
-      KEYCLOAK_REALM: helpdesk
-      KEYCLOAK_CLIENT_ID: helpdesk-frontend
+      AUTH_URL: http://auth-service:8001
+      API_URL: http://ticket-api:8000
 
     networks:
       - helpdesk-net
@@ -68,6 +67,7 @@ services:
       RABBITMQ_USER: user
       RABBITMQ_PASS: password
       QUEUE_NAME: ticket_events
+      BACKEND_URL: http://ticket-api:8000
 
     networks:
       - helpdesk-net
@@ -155,6 +155,22 @@ services:
         condition: on-failure
 
 
+  pgadmin:
+    image: dpage/pgadmin4
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@helpdesk.com
+      PGADMIN_DEFAULT_PASSWORD: admin
+    ports:
+      - "5050:80"
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
+    networks:
+      - helpdesk-net
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+
 networks:
   helpdesk-net:
     driver: overlay
@@ -163,6 +179,7 @@ networks:
 volumes:
   db_data:
   keycloak_data:
+  pgadmin_data:
 
 configs:
   helpdesk_realm:
