@@ -1,0 +1,169 @@
+version: "3.9"
+
+services:
+  backend:
+    image: helpdesk-distributed-backend:latest
+    environment:
+      # DB
+      POSTGRES_HOST: db
+      POSTGRES_PORT: 5432
+      POSTGRES_DB: helpdesk
+      POSTGRES_USER: helpdesk
+      POSTGRES_PASSWORD: helpdesk
+
+      # Redis
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+
+      # RabbitMQ
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_USER: user
+      RABBITMQ_PASS: password
+
+      # Keycloak (if your backend reads anything from env)
+      KEYCLOAK_BASE_URL: http://keycloak:8080
+      KEYCLOAK_REALM: helpdesk
+
+    networks:
+      - helpdesk-net
+
+    ports:
+      - "8000:8000"
+
+    deploy:
+      replicas: 2
+      restart_policy:
+        condition: on-failure
+      update_config:
+        order: start-first
+        parallelism: 1
+        delay: 3s
+
+
+  frontend:
+    image: helpdesk-distributed-frontend:latest
+    environment:
+      # Optional: if your Streamlit app reads these
+      API_URL: http://backend:8000
+      KEYCLOAK_BASE_URL: http://keycloak:8080
+      KEYCLOAK_REALM: helpdesk
+      KEYCLOAK_CLIENT_ID: helpdesk-frontend
+
+    networks:
+      - helpdesk-net
+
+    ports:
+      - "8501:8501"
+
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+
+
+  worker:
+    image: helpdesk-distributed-worker:latest
+    environment:
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_USER: user
+      RABBITMQ_PASS: password
+      QUEUE_NAME: ticket_events
+
+    networks:
+      - helpdesk-net
+
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+
+
+  db:
+    image: postgres:15
+    environment:
+      POSTGRES_DB: helpdesk
+      POSTGRES_USER: helpdesk
+      POSTGRES_PASSWORD: helpdesk
+
+    volumes:
+      - db_data:/var/lib/postgresql/data
+
+    networks:
+      - helpdesk-net
+
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+
+
+  redis:
+    image: redis:7-alpine
+
+    networks:
+      - helpdesk-net
+
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+
+
+  rabbitmq:
+    image: rabbitmq:3-management
+    environment:
+      RABBITMQ_DEFAULT_USER: user
+      RABBITMQ_DEFAULT_PASS: password
+
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+
+    networks:
+      - helpdesk-net
+
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+
+
+  keycloak:
+    image: quay.io/keycloak/keycloak:24.0.2
+    environment:
+      KEYCLOAK_ADMIN: admin
+      KEYCLOAK_ADMIN_PASSWORD: admin
+    command:
+      - start-dev
+      - --import-realm
+
+    ports:
+      - "8080:8080"
+
+    volumes:
+      - keycloak_data:/opt/keycloak/data
+    configs:
+      - source: helpdesk_realm
+        target: /opt/keycloak/data/import/helpdesk-realm.json
+
+    networks:
+      - helpdesk-net
+
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+
+
+networks:
+  helpdesk-net:
+    driver: overlay
+
+
+volumes:
+  db_data:
+  keycloak_data:
+
+configs:
+  helpdesk_realm:
+    file: ./keycloak/helpdesk-realm.json

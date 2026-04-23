@@ -1,0 +1,96 @@
+version: "3.9"
+
+services:
+  db:
+    image: postgres:15
+    environment:
+      POSTGRES_USER: helpdesk
+      POSTGRES_PASSWORD: helpdesk
+      POSTGRES_DB: helpdesk
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    networks:
+      - helpdesk-net
+
+  redis:
+    image: redis:7-alpine
+    # no need to expose ports on host for now
+    networks:
+      - helpdesk-net
+
+  rabbitmq:
+    image: rabbitmq:3-management
+    environment:
+      RABBITMQ_DEFAULT_USER: user
+      RABBITMQ_DEFAULT_PASS: password
+    ports:
+      - "5672:5672" # AMQP
+      - "15672:15672" # Management UI
+    networks:
+      - helpdesk-net
+
+  backend:
+    build: ./backend
+    environment:
+      POSTGRES_USER: helpdesk
+      POSTGRES_PASSWORD: helpdesk
+      POSTGRES_DB: helpdesk
+      POSTGRES_HOST: db
+
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_DB: 0
+
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_USER: user
+      RABBITMQ_PASS: password
+    depends_on:
+      - db
+      - redis
+      - rabbitmq
+    ports:
+      - "8000:8000"
+    networks:
+      - helpdesk-net
+
+  frontend:
+    build: ./frontend
+    depends_on:
+      - backend
+    ports:
+      - "8501:8501"
+    networks:
+      - helpdesk-net
+
+  worker:
+    build: ./worker
+    environment:
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_USER: user
+      RABBITMQ_PASS: password
+    depends_on:
+      - rabbitmq
+    networks:
+      - helpdesk-net
+  keycloak:
+    image: quay.io/keycloak/keycloak:24.0.2
+    environment:
+      KEYCLOAK_ADMIN: admin
+      KEYCLOAK_ADMIN_PASSWORD: admin
+    command:
+      - start-dev
+    ports:
+      - "8080:8080"
+    networks:
+      - helpdesk-net
+    volumes:
+      - keycloak_data:/opt/keycloak/data # <─ persist realm/users/clients
+
+volumes:
+  db_data:
+  keycloak_data:
+
+
+networks:
+  helpdesk-net:
+    driver: bridge

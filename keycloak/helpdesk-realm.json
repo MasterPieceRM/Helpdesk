@@ -1,0 +1,112 @@
+{
+    "realm": "helpdesk",
+    "enabled": true,
+    "sslRequired": "external",
+    "registrationAllowed": true,
+    "loginWithEmailAllowed": true,
+    "duplicateEmailsAllowed": false,
+    "resetPasswordAllowed": true,
+    "editUsernameAllowed": false,
+    "bruteForceProtected": true,
+    "clients": [
+        {
+            "clientId": "helpdesk-frontend",
+            "name": "Helpdesk Frontend",
+            "enabled": true,
+            "publicClient": true,
+            "directAccessGrantsEnabled": true,
+            "standardFlowEnabled": true,
+            "implicitFlowEnabled": false,
+            "redirectUris": [
+                "http://localhost:8501/*",
+                "http://frontend:8501/*"
+            ],
+            "webOrigins": [
+                "http://localhost:8501",
+                "http://frontend:8501",
+                "+"
+            ],
+            "protocol": "openid-connect"
+        },
+        {
+            "clientId": "helpdesk-backend",
+            "name": "Helpdesk Backend",
+            "enabled": true,
+            "publicClient": false,
+            "bearerOnly": true,
+            "protocol": "openid-connect"
+        }
+    ],
+    "roles": {
+        "realm": [
+            {
+                "name": "admin",
+                "description": "Administrator role - full system access"
+            },
+            {
+                "name": "support",
+                "description": "Support role - can manage and respond to tickets"
+            },
+            {
+                "name": "client",
+                "description": "Client role - can create and view own tickets"
+            }
+        ]
+    },
+    "users": [
+        {
+            "username": "admin",
+            "enabled": true,
+            "emailVerified": true,
+            "email": "admin@helpdesk.local",
+            "firstName": "Admin",
+            "lastName": "User",
+            "credentials": [
+                {
+                    "type": "password",
+                    "value": "admin",
+                    "temporary": false
+                }
+            ],
+            "realmRoles": [
+                "admin"
+            ]
+        },
+        {
+            "username": "support",
+            "enabled": true,
+            "emailVerified": true,
+            "email": "support@helpdesk.local",
+            "firstName": "Support",
+            "lastName": "Agent",
+            "credentials": [
+                {
+                    "type": "password",
+                    "value": "support",
+                    "temporary": false
+                }
+            ],
+            "realmRoles": [
+                "support"
+            ]
+        },
+        {
+            "username": "client",
+            "enabled": true,
+            "emailVerified": true,
+            "email": "client@helpdesk.local",
+            "firstName": "Client",
+            "lastName": "User",
+            "credentials": [
+                {
+                    "type": "password",
+                    "value": "client",
+                    "temporary": false
+                }
+            ],
+            "realmRoles": [
+                "client"
+            ]
+        }
+    ]
+}

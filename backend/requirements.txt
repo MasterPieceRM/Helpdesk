@@ -1,0 +1,10 @@
+fastapi
+uvicorn[standard]
+SQLAlchemy
+psycopg2-binary
+pydantic
+python-dotenv
+redis
+pika
+python-jose[cryptography]
+requests
