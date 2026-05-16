@@ -1,8 +1,10 @@
 from fastapi import FastAPI, Depends, HTTPException
+from prometheus_fastapi_instrumentator import Instrumentator
 from . import schemas, keycloak_admin
 from .auth import CurrentUser, get_current_user, require_roles
 
 app = FastAPI(title="HelpDesk Auth Service")
+Instrumentator().instrument(app).expose(app)
 
 
 @app.get("/health")

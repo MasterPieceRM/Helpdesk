@@ -162,6 +162,37 @@ services:
       - helpdesk-net
     restart: unless-stopped
 
+  prometheus:
+    image: prom/prometheus:v2.51.0
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    ports:
+      - "9090:9090"
+    networks:
+      - helpdesk-net
+    depends_on:
+      - ticket-api
+      - auth-service
+    restart: unless-stopped
+
+  grafana:
+    image: grafana/grafana:10.4.0
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: admin
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./grafana/dashboards:/var/lib/grafana/dashboards:ro
+    ports:
+      - "3000:3000"
+    networks:
+      - helpdesk-net
+    depends_on:
+      - prometheus
+    restart: unless-stopped
+
   pgadmin:
     image: dpage/pgadmin4
     environment:
@@ -182,6 +213,8 @@ volumes:
   keycloak_data:
   pgadmin_data:
   portainer_data:
+  prometheus_data:
+  grafana_data:
 
 networks:
   helpdesk-net:

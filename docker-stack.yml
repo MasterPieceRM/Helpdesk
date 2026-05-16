@@ -196,6 +196,45 @@ services:
       restart_policy:
         condition: on-failure
 
+  prometheus:
+    image: prom/prometheus:v2.51.0
+    volumes:
+      - prometheus_data:/prometheus
+    configs:
+      - source: prometheus_config
+        target: /etc/prometheus/prometheus.yml
+    ports:
+      - "9090:9090"
+    networks:
+      - helpdesk-net
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+
+  grafana:
+    image: grafana/grafana:10.4.0
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: admin
+    volumes:
+      - grafana_data:/var/lib/grafana
+    configs:
+      - source: grafana_datasource
+        target: /etc/grafana/provisioning/datasources/prometheus.yml
+      - source: grafana_dashboard_provider
+        target: /etc/grafana/provisioning/dashboards/dashboards.yml
+      - source: grafana_dashboard_helpdesk
+        target: /var/lib/grafana/dashboards/helpdesk.json
+    ports:
+      - "3000:3000"
+    networks:
+      - helpdesk-net
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+
   pgadmin:
     image: dpage/pgadmin4
     environment:
@@ -222,9 +261,19 @@ volumes:
   keycloak_data:
   pgadmin_data:
   portainer_data:
+  prometheus_data:
+  grafana_data:
 
 configs:
   helpdesk_realm:
     file: ./keycloak/helpdesk-realm.json
   kong_config:
     file: ./kong/kong.yml
+  prometheus_config:
+    file: ./prometheus/prometheus.yml
+  grafana_datasource:
+    file: ./grafana/provisioning/datasources/prometheus.yml
+  grafana_dashboard_provider:
+    file: ./grafana/provisioning/dashboards/dashboards.yml
+  grafana_dashboard_helpdesk:
+    file: ./grafana/dashboards/helpdesk.json

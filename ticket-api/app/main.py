@@ -1,6 +1,7 @@
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, Depends, HTTPException
 from typing import List
+from prometheus_fastapi_instrumentator import Instrumentator
 from . import models, db, schemas, crud, deps, cache, messaging
 from .auth import CurrentUser, get_current_user, require_roles
 
@@ -18,6 +19,7 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(title="HelpDesk Ticket API", lifespan=lifespan)
+Instrumentator().instrument(app).expose(app)
 
 
 @app.get("/health")

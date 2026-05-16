@@ -7,3 +7,4 @@ python-dotenv
 redis
 pika
 python-jose[cryptography]
+prometheus-fastapi-instrumentator
