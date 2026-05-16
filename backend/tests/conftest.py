@@ -11,6 +11,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 from unittest.mock import patch, MagicMock
+from contextlib import asynccontextmanager
 
 import sys
 import os
@@ -64,14 +65,20 @@ def db_session(test_db):
         session.close()
 
 
+# No-op lifespan to skip DB/Redis/RabbitMQ connections in tests
+@asynccontextmanager
+async def _test_lifespan(app):
+    yield
+
+
 @pytest.fixture
 def client(test_db):
     """Create a test client with mocked dependencies."""
     # Import app here to avoid circular imports
     from app.main import app
 
-    # Remove startup event to avoid database connection
-    app.router.on_startup = []
+    # Replace lifespan to avoid connecting to external services
+    app.router.lifespan_context = _test_lifespan
 
     app.dependency_overrides[get_db] = override_get_db
 
