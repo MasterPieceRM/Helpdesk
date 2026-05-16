@@ -8,7 +8,7 @@ on:
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_PREFIX: ${{ github.repository_owner }}/helpdesk
+  IMAGE_PREFIX: masterpiecerm/helpdesk
 
 jobs:
   # ── Stage 1: Test ───────────────────────────────────────────
