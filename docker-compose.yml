@@ -123,6 +123,34 @@ services:
       - keycloak_data:/opt/keycloak/data
       - ./keycloak/helpdesk-realm.json:/opt/keycloak/data/import/helpdesk-realm.json:ro
 
+  kong:
+    image: kong:3.6
+    environment:
+      KONG_DATABASE: "off"
+      KONG_DECLARATIVE_CONFIG: /etc/kong/kong.yml
+      KONG_PROXY_ACCESS_LOG: /dev/stdout
+      KONG_ADMIN_ACCESS_LOG: /dev/stdout
+      KONG_PROXY_ERROR_LOG: /dev/stderr
+      KONG_ADMIN_ERROR_LOG: /dev/stderr
+      KONG_ADMIN_LISTEN: "0.0.0.0:8001"
+      KONG_PROXY_LISTEN: "0.0.0.0:8000"
+    volumes:
+      - ./kong/kong.yml:/etc/kong/kong.yml:ro
+    ports:
+      - "8100:8000"
+      - "8101:8001"
+    depends_on:
+      - ticket-api
+      - auth-service
+    networks:
+      - helpdesk-net
+    healthcheck:
+      test: [ "CMD", "kong", "health" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
   pgadmin:
     image: dpage/pgadmin4
     environment:
@@ -142,7 +170,6 @@ volumes:
   db_data:
   keycloak_data:
   pgadmin_data:
-
 
 networks:
   helpdesk-net:

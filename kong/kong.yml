@@ -1,0 +1,44 @@
+_format_version: "3.0"
+_transform: true
+
+services:
+  # ── Ticket API ──────────────────────────────────────────────
+  - name: ticket-api
+    url: http://ticket-api:8000
+    routes:
+      - name: tickets-route
+        paths:
+          - /tickets
+        strip_path: false
+
+      - name: notifications-route
+        paths:
+          - /notifications
+        strip_path: false
+
+      - name: ticket-api-proxy
+        paths:
+          - /ticket-api
+        strip_path: true
+
+  # ── Auth Service ────────────────────────────────────────────
+  - name: auth-service
+    url: http://auth-service:8001
+    routes:
+      - name: auth-route
+        paths:
+          - /auth
+        strip_path: true
+
+plugins:
+  # ── Global Rate Limiting ────────────────────────────────────
+  - name: rate-limiting
+    config:
+      minute: 100
+      policy: local
+
+  # ── Global Request Logging ──────────────────────────────────
+  - name: file-log
+    config:
+      path: /dev/stdout
+      reopen: false
