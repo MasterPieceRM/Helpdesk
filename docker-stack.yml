@@ -179,6 +179,23 @@ services:
       restart_policy:
         condition: on-failure
 
+  portainer:
+    image: portainer/portainer-ce:lts
+    ports:
+      - "9000:9000"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - portainer_data:/data
+    networks:
+      - helpdesk-net
+    deploy:
+      replicas: 1
+      placement:
+        constraints:
+          - node.role == manager
+      restart_policy:
+        condition: on-failure
+
   pgadmin:
     image: dpage/pgadmin4
     environment:
@@ -204,6 +221,7 @@ volumes:
   db_data:
   keycloak_data:
   pgadmin_data:
+  portainer_data:
 
 configs:
   helpdesk_realm:
