@@ -204,6 +204,8 @@ services:
     environment:
       GF_SECURITY_ADMIN_USER: admin
       GF_SECURITY_ADMIN_PASSWORD: admin
+      GF_SERVER_ROOT_URL: %(protocol)s://%(domain)s/grafana/
+      GF_SERVER_SERVE_FROM_SUB_PATH: "true"
     volumes:
       - grafana_data:/var/lib/grafana
     configs:
@@ -214,6 +216,7 @@ services:
       - source: grafana_dashboard_helpdesk
         target: /var/lib/grafana/dashboards/helpdesk.json
     networks:
+      - gateway-net
       - observability-net
     deploy:
       replicas: 1

@@ -99,6 +99,6 @@ jobs:
           script: |
             cd ${{ secrets.DEPLOY_PATH }}
             git pull origin main
-            docker stack deploy -c docker-stack.yml helpdesk
+            docker stack deploy --prune -c docker-stack.yml helpdesk
             docker service ls
             echo "Deployed successfully at $(date)"
