@@ -40,6 +40,7 @@ services:
 
   - name: pgadmin
     url: http://pgadmin:80
+    preserve_host: true
     routes:
       - name: pgadmin-route
         paths:
@@ -48,10 +49,20 @@ services:
 
   - name: grafana
     url: http://grafana:3000
+    preserve_host: true
     routes:
       - name: grafana-route
         paths:
           - /grafana
+        strip_path: false
+
+  - name: portainer
+    url: http://portainer:9000
+    preserve_host: true
+    routes:
+      - name: portainer-route
+        paths:
+          - /portainer
         strip_path: false
 
 plugins:
