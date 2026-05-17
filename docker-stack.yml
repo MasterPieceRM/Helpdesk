@@ -4,10 +4,7 @@ services:
     environment:
       KEYCLOAK_URL: http://keycloak:8080
       KEYCLOAK_REALM: helpdesk
-    ports:
-      - "8001:8001"
     networks:
-      - frontend-net
       - gateway-net
       - observability-net
     deploy:
@@ -31,13 +28,10 @@ services:
       RABBITMQ_USER: user
       RABBITMQ_PASS: password
     networks:
-      - frontend-net
       - gateway-net
       - worker-messaging-net
       - data-net
       - observability-net
-    ports:
-      - "8000:8000"
     deploy:
       replicas: 2
       restart_policy:
@@ -51,14 +45,12 @@ services:
   frontend:
     image: ghcr.io/masterpiecerm/helpdesk-frontend:latest
     environment:
-      AUTH_URL: http://auth-service:8001
-      API_URL: http://ticket-api:8000
+      AUTH_URL: http://kong:8000/auth
+      API_URL: http://kong:8000
 
     networks:
       - frontend-net
-
-    ports:
-      - "8501:8501"
+      - gateway-net
 
     deploy:
       replicas: 1
@@ -121,10 +113,6 @@ services:
       RABBITMQ_DEFAULT_USER: user
       RABBITMQ_DEFAULT_PASS: password
 
-    ports:
-      - "5672:5672"
-      - "15672:15672"
-
     networks:
       - worker-messaging-net
 
@@ -142,9 +130,6 @@ services:
     command:
       - start-dev
       - --import-realm
-
-    ports:
-      - "8080:8080"
 
     volumes:
       - keycloak_data:/opt/keycloak/data
@@ -177,7 +162,6 @@ services:
         target: /etc/kong/kong.yml
     ports:
       - "8100:8000"
-      - "8101:8001"
     networks:
       - gateway-net
       - observability-net
@@ -188,8 +172,6 @@ services:
 
   portainer:
     image: portainer/portainer-ce:lts
-    ports:
-      - "9000:9000"
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
       - portainer_data:/data
@@ -210,8 +192,6 @@ services:
     configs:
       - source: prometheus_config
         target: /etc/prometheus/prometheus.yml
-    ports:
-      - "9090:9090"
     networks:
       - observability-net
     deploy:
@@ -233,8 +213,6 @@ services:
         target: /etc/grafana/provisioning/dashboards/dashboards.yml
       - source: grafana_dashboard_helpdesk
         target: /var/lib/grafana/dashboards/helpdesk.json
-    ports:
-      - "3000:3000"
     networks:
       - observability-net
     deploy:
@@ -247,12 +225,12 @@ services:
     environment:
       PGADMIN_DEFAULT_EMAIL: admin@helpdesk.com
       PGADMIN_DEFAULT_PASSWORD: admin
-    ports:
-      - "5050:80"
+      SCRIPT_NAME: /pgadmin
     volumes:
       - pgadmin_data:/var/lib/pgadmin
     networks:
       - data-net
+      - gateway-net
     deploy:
       replicas: 1
       restart_policy:

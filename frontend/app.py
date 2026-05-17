@@ -6,8 +6,8 @@ import streamlit as st
 # Config
 # ---------------------------
 
-AUTH_URL = os.getenv("AUTH_URL", "http://auth-service:8001")
-API_URL = os.getenv("API_URL", "http://ticket-api:8000")
+AUTH_URL = os.getenv("AUTH_URL", "http://kong:8000/auth")
+API_URL = os.getenv("API_URL", "http://kong:8000")
 
 KEYCLOAK_BASE_URL = "http://keycloak:8080"
 KEYCLOAK_REALM = "helpdesk"

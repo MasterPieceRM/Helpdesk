@@ -2,6 +2,14 @@ _format_version: "3.0"
 _transform: true
 
 services:
+  - name: frontend
+    url: http://frontend:8501
+    routes:
+      - name: frontend-route
+        paths:
+          - /
+        strip_path: false
+
   # ── Ticket API ──────────────────────────────────────────────
   - name: ticket-api
     url: http://ticket-api:8000
@@ -30,12 +38,22 @@ services:
           - /auth
         strip_path: true
 
+  - name: pgadmin
+    url: http://pgadmin:80
+    routes:
+      - name: pgadmin-route
+        paths:
+          - /pgadmin
+        strip_path: false
+
 plugins:
   # ── Global Rate Limiting ────────────────────────────────────
   - name: rate-limiting
     config:
       minute: 100
       policy: local
+
+  - name: prometheus
 
   # ── Global Request Logging ──────────────────────────────────
   - name: file-log
