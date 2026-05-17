@@ -100,13 +100,22 @@ jobs:
             cd ${{ secrets.DEPLOY_PATH }}
             git fetch origin
             git reset --hard origin/main
-            export STACK_CONFIG_VERSION=$(git rev-parse --short HEAD)
-            docker stack deploy --prune -c docker-stack.yml helpdesk
-            current_configs=$(docker service ls --filter label=com.docker.stack.namespace=helpdesk -q | xargs -r docker service inspect --format '{{range .Spec.TaskTemplate.ContainerSpec.Configs}}{{println .ConfigName}}{{end}}' | sort -u)
-            docker config ls --format '{{.Name}}' | grep '^helpdesk_' | while read -r cfg; do
-              if ! printf '%s\n' "$current_configs" | grep -qx "$cfg"; then
-                docker config rm "$cfg" >/dev/null 2>&1 || true
-              fi
-            done
-            docker service ls
+            STACK_CONFIG_VERSION=$(git rev-parse --short HEAD)
+            docker inspect swarm-manager >/dev/null 2>&1 || { echo 'swarm-manager container not found'; exit 1; }
+            docker exec swarm-manager docker info >/dev/null 2>&1 || { echo 'inner Docker daemon in swarm-manager is not ready'; exit 1; }
+            docker exec swarm-manager mkdir -p /workspace/Helpdesk
+            docker exec swarm-manager sh -lc 'rm -rf /workspace/Helpdesk/* /workspace/Helpdesk/.[!.]* /workspace/Helpdesk/..?* 2>/dev/null || true'
+            docker cp "$PWD"/. swarm-manager:/workspace/Helpdesk
+            docker exec -e STACK_CONFIG_VERSION="$STACK_CONFIG_VERSION" swarm-manager sh -lc '
+              set -e
+              cd /workspace/Helpdesk
+              docker stack deploy --prune -c docker-stack.yml helpdesk
+              current_configs=$(docker service ls --filter label=com.docker.stack.namespace=helpdesk -q | xargs -r docker service inspect --format "{{range .Spec.TaskTemplate.ContainerSpec.Configs}}{{println .ConfigName}}{{end}}" | sort -u)
+              for cfg in $(docker config ls --format "{{.Name}}" | grep "^helpdesk_" || true); do
+                if ! printf "%s\n" "$current_configs" | grep -qx "$cfg"; then
+                  docker config rm "$cfg" >/dev/null 2>&1 || true
+                fi
+              done
+              docker service ls
+            '
             echo "Deployed successfully at $(date)"

@@ -9,6 +9,9 @@ services:
       - observability-net
     deploy:
       replicas: 1
+      placement:
+        constraints:
+          - node.role == worker
       restart_policy:
         condition: on-failure
 
@@ -34,6 +37,11 @@ services:
       - observability-net
     deploy:
       replicas: 2
+      placement:
+        constraints:
+          - node.role == worker
+        preferences:
+          - spread: node.id
       restart_policy:
         condition: on-failure
       update_config:
@@ -54,6 +62,9 @@ services:
 
     deploy:
       replicas: 1
+      placement:
+        constraints:
+          - node.role == worker
       restart_policy:
         condition: on-failure
 
@@ -72,6 +83,9 @@ services:
 
     deploy:
       replicas: 1
+      placement:
+        constraints:
+          - node.role == worker
       restart_policy:
         condition: on-failure
 
@@ -91,6 +105,9 @@ services:
 
     deploy:
       replicas: 1
+      placement:
+        constraints:
+          - node.role == manager
       restart_policy:
         condition: on-failure
 
@@ -103,6 +120,9 @@ services:
 
     deploy:
       replicas: 1
+      placement:
+        constraints:
+          - node.role == manager
       restart_policy:
         condition: on-failure
 
@@ -118,6 +138,9 @@ services:
 
     deploy:
       replicas: 1
+      placement:
+        constraints:
+          - node.role == manager
       restart_policy:
         condition: on-failure
 
@@ -142,6 +165,9 @@ services:
 
     deploy:
       replicas: 1
+      placement:
+        constraints:
+          - node.role == manager
       restart_policy:
         condition: on-failure
 
@@ -168,6 +194,9 @@ services:
       - observability-net
     deploy:
       replicas: 1
+      placement:
+        constraints:
+          - node.role == manager
       restart_policy:
         condition: on-failure
 
@@ -199,6 +228,9 @@ services:
       - observability-net
     deploy:
       replicas: 1
+      placement:
+        constraints:
+          - node.role == manager
       restart_policy:
         condition: on-failure
 
@@ -223,6 +255,9 @@ services:
       - observability-net
     deploy:
       replicas: 1
+      placement:
+        constraints:
+          - node.role == manager
       restart_policy:
         condition: on-failure
 
@@ -240,6 +275,9 @@ services:
       - gateway-net
     deploy:
       replicas: 1
+      placement:
+        constraints:
+          - node.role == manager
       restart_policy:
         condition: on-failure
 
