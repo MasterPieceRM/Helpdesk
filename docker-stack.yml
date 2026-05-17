@@ -7,7 +7,9 @@ services:
     ports:
       - "8001:8001"
     networks:
-      - helpdesk-net
+      - frontend-net
+      - gateway-net
+      - observability-net
     deploy:
       replicas: 1
       restart_policy:
@@ -29,7 +31,11 @@ services:
       RABBITMQ_USER: user
       RABBITMQ_PASS: password
     networks:
-      - helpdesk-net
+      - frontend-net
+      - gateway-net
+      - worker-messaging-net
+      - data-net
+      - observability-net
     ports:
       - "8000:8000"
     deploy:
@@ -49,7 +55,7 @@ services:
       API_URL: http://ticket-api:8000
 
     networks:
-      - helpdesk-net
+      - frontend-net
 
     ports:
       - "8501:8501"
@@ -70,7 +76,7 @@ services:
       BACKEND_URL: http://ticket-api:8000
 
     networks:
-      - helpdesk-net
+      - worker-messaging-net
 
     deploy:
       replicas: 1
@@ -89,7 +95,7 @@ services:
       - db_data:/var/lib/postgresql/data
 
     networks:
-      - helpdesk-net
+      - data-net
 
     deploy:
       replicas: 1
@@ -101,7 +107,7 @@ services:
     image: redis:7-alpine
 
     networks:
-      - helpdesk-net
+      - data-net
 
     deploy:
       replicas: 1
@@ -120,7 +126,7 @@ services:
       - "15672:15672"
 
     networks:
-      - helpdesk-net
+      - worker-messaging-net
 
     deploy:
       replicas: 1
@@ -147,7 +153,7 @@ services:
         target: /opt/keycloak/data/import/helpdesk-realm.json
 
     networks:
-      - helpdesk-net
+      - frontend-net
 
     deploy:
       replicas: 1
@@ -173,7 +179,8 @@ services:
       - "8100:8000"
       - "8101:8001"
     networks:
-      - helpdesk-net
+      - gateway-net
+      - observability-net
     deploy:
       replicas: 1
       restart_policy:
@@ -187,7 +194,7 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock
       - portainer_data:/data
     networks:
-      - helpdesk-net
+      - admin-net
     deploy:
       replicas: 1
       placement:
@@ -206,7 +213,7 @@ services:
     ports:
       - "9090:9090"
     networks:
-      - helpdesk-net
+      - observability-net
     deploy:
       replicas: 1
       restart_policy:
@@ -229,7 +236,7 @@ services:
     ports:
       - "3000:3000"
     networks:
-      - helpdesk-net
+      - observability-net
     deploy:
       replicas: 1
       restart_policy:
@@ -245,14 +252,24 @@ services:
     volumes:
       - pgadmin_data:/var/lib/pgadmin
     networks:
-      - helpdesk-net
+      - data-net
     deploy:
       replicas: 1
       restart_policy:
         condition: on-failure
 
 networks:
-  helpdesk-net:
+  frontend-net:
+    driver: overlay
+  gateway-net:
+    driver: overlay
+  worker-messaging-net:
+    driver: overlay
+  data-net:
+    driver: overlay
+  observability-net:
+    driver: overlay
+  admin-net:
     driver: overlay
 
 

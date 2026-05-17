@@ -8,7 +8,7 @@ services:
     volumes:
       - db_data:/var/lib/postgresql/data
     networks:
-      - helpdesk-net
+      - data-net
     healthcheck:
       test: [ "CMD-SHELL", "pg_isready -U helpdesk -d helpdesk" ]
       interval: 5s
@@ -18,7 +18,7 @@ services:
   redis:
     image: redis:7-alpine
     networks:
-      - helpdesk-net
+      - data-net
     healthcheck:
       test: [ "CMD", "redis-cli", "ping" ]
       interval: 5s
@@ -34,7 +34,7 @@ services:
       - "5672:5672"
       - "15672:15672"
     networks:
-      - helpdesk-net
+      - worker-messaging-net
     healthcheck:
       test: [ "CMD", "rabbitmq-diagnostics", "ping" ]
       interval: 10s
@@ -52,7 +52,9 @@ services:
     ports:
       - "8001:8001"
     networks:
-      - helpdesk-net
+      - frontend-net
+      - gateway-net
+      - observability-net
 
   ticket-api:
     build: ./ticket-api
@@ -79,7 +81,11 @@ services:
     ports:
       - "8000:8000"
     networks:
-      - helpdesk-net
+      - frontend-net
+      - gateway-net
+      - worker-messaging-net
+      - data-net
+      - observability-net
 
   frontend:
     build: ./frontend
@@ -92,7 +98,7 @@ services:
     ports:
       - "8501:8501"
     networks:
-      - helpdesk-net
+      - frontend-net
 
   worker:
     build: ./worker
@@ -105,7 +111,7 @@ services:
       rabbitmq:
         condition: service_healthy
     networks:
-      - helpdesk-net
+      - worker-messaging-net
 
   keycloak:
     image: quay.io/keycloak/keycloak:24.0.2
@@ -118,7 +124,7 @@ services:
     ports:
       - "8080:8080"
     networks:
-      - helpdesk-net
+      - frontend-net
     volumes:
       - keycloak_data:/opt/keycloak/data
       - ./keycloak/helpdesk-realm.json:/opt/keycloak/data/import/helpdesk-realm.json:ro
@@ -143,7 +149,8 @@ services:
       - ticket-api
       - auth-service
     networks:
-      - helpdesk-net
+      - gateway-net
+      - observability-net
     healthcheck:
       test: [ "CMD", "kong", "health" ]
       interval: 10s
@@ -159,7 +166,7 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock
       - portainer_data:/data
     networks:
-      - helpdesk-net
+      - admin-net
     restart: unless-stopped
 
   prometheus:
@@ -170,7 +177,7 @@ services:
     ports:
       - "9090:9090"
     networks:
-      - helpdesk-net
+      - observability-net
     depends_on:
       - ticket-api
       - auth-service
@@ -188,7 +195,7 @@ services:
     ports:
       - "3000:3000"
     networks:
-      - helpdesk-net
+      - observability-net
     depends_on:
       - prometheus
     restart: unless-stopped
@@ -203,7 +210,7 @@ services:
     volumes:
       - pgadmin_data:/var/lib/pgadmin
     networks:
-      - helpdesk-net
+      - data-net
     depends_on:
       db:
         condition: service_healthy
@@ -217,5 +224,15 @@ volumes:
   grafana_data:
 
 networks:
-  helpdesk-net:
+  frontend-net:
+    driver: bridge
+  gateway-net:
+    driver: bridge
+  worker-messaging-net:
+    driver: bridge
+  data-net:
+    driver: bridge
+  observability-net:
+    driver: bridge
+  admin-net:
     driver: bridge
