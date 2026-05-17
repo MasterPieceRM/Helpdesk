@@ -98,7 +98,15 @@ jobs:
           key: ${{ secrets.DEPLOY_SSH_KEY }}
           script: |
             cd ${{ secrets.DEPLOY_PATH }}
-            git pull origin main
+            git fetch origin
+            git reset --hard origin/main
+            export STACK_CONFIG_VERSION=$(git rev-parse --short HEAD)
             docker stack deploy --prune -c docker-stack.yml helpdesk
+            current_configs=$(docker service ls --filter label=com.docker.stack.namespace=helpdesk -q | xargs -r docker service inspect --format '{{range .Spec.TaskTemplate.ContainerSpec.Configs}}{{println .ConfigName}}{{end}}' | sort -u)
+            docker config ls --format '{{.Name}}' | grep '^helpdesk_' | while read -r cfg; do
+              if ! printf '%s\n' "$current_configs" | grep -qx "$cfg"; then
+                docker config rm "$cfg" >/dev/null 2>&1 || true
+              fi
+            done
             docker service ls
             echo "Deployed successfully at $(date)"

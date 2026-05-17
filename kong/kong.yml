@@ -69,21 +69,6 @@ services:
         strip_path: false
         preserve_host: true
 
-  - name: portainer
-    url: http://portainer:9000
-    plugins:
-      - name: request-transformer
-        config:
-          add:
-            headers:
-              - "X-Forwarded-Prefix:/portainer"
-    routes:
-      - name: portainer-route
-        paths:
-          - /portainer
-        strip_path: false
-        preserve_host: true
-
 plugins:
   # ── Global Rate Limiting ────────────────────────────────────
   - name: rate-limiting

@@ -173,12 +173,12 @@ services:
 
   portainer:
     image: portainer/portainer-ce:lts
-    command: --base-url /portainer
+    ports:
+      - "9000:9000"
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
       - portainer_data:/data
     networks:
-      - gateway-net
       - admin-net
     deploy:
       replicas: 1
@@ -268,14 +268,20 @@ volumes:
 
 configs:
   helpdesk_realm:
+    name: "helpdesk_realm_${STACK_CONFIG_VERSION:-manual}"
     file: ./keycloak/helpdesk-realm.json
   kong_config:
+    name: "helpdesk_kong_config_${STACK_CONFIG_VERSION:-manual}"
     file: ./kong/kong.yml
   prometheus_config:
+    name: "helpdesk_prometheus_config_${STACK_CONFIG_VERSION:-manual}"
     file: ./prometheus/prometheus.yml
   grafana_datasource:
+    name: "helpdesk_grafana_datasource_${STACK_CONFIG_VERSION:-manual}"
     file: ./grafana/provisioning/datasources/prometheus.yml
   grafana_dashboard_provider:
+    name: "helpdesk_grafana_dashboard_provider_${STACK_CONFIG_VERSION:-manual}"
     file: ./grafana/provisioning/dashboards/dashboards.yml
   grafana_dashboard_helpdesk:
+    name: "helpdesk_grafana_dashboard_helpdesk_${STACK_CONFIG_VERSION:-manual}"
     file: ./grafana/dashboards/helpdesk.json

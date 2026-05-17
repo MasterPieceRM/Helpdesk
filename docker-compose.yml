@@ -148,12 +148,12 @@ services:
 
   portainer:
     image: portainer/portainer-ce:lts
-    command: --base-url /portainer
+    ports:
+      - "9000:9000"
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
       - portainer_data:/data
     networks:
-      - gateway-net
       - admin-net
     restart: unless-stopped
 
