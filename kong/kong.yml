@@ -73,7 +73,7 @@ plugins:
   # ── Global Rate Limiting ────────────────────────────────────
   - name: rate-limiting
     config:
-      minute: 100
+      minute: 300
       policy: local
 
   - name: prometheus

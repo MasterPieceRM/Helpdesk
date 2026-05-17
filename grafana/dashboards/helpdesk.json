@@ -4,88 +4,18 @@
     },
     "editable": true,
     "fiscalYearStartMonth": 0,
-    "graphTooltip": 1,
+    "graphTooltip": 0,
     "id": null,
     "links": [],
     "panels": [
         {
-            "title": "Request Rate (req/s)",
-            "type": "timeseries",
+            "title": "App Traffic",
+            "type": "stat",
             "gridPos": {
-                "h": 8,
-                "w": 12,
-                "x": 0,
-                "y": 0
-            },
-            "datasource": {
-                "type": "prometheus",
-                "uid": ""
-            },
-            "fieldConfig": {
-                "defaults": {
-                    "color": {
-                        "mode": "palette-classic"
-                    },
-                    "custom": {
-                        "lineWidth": 2,
-                        "fillOpacity": 10,
-                        "spanNulls": false,
-                        "axisBorderShow": false
-                    },
-                    "unit": "reqps"
-                },
-                "overrides": []
-            },
-            "targets": [
-                {
-                    "expr": "rate(http_requests_total[1m])",
-                    "legendFormat": "{{handler}} {{method}} {{status}}",
-                    "refId": "A"
-                }
-            ]
-        },
-        {
-            "title": "Response Time (p95)",
-            "type": "timeseries",
-            "gridPos": {
-                "h": 8,
-                "w": 12,
-                "x": 12,
-                "y": 0
-            },
-            "datasource": {
-                "type": "prometheus",
-                "uid": ""
-            },
-            "fieldConfig": {
-                "defaults": {
-                    "color": {
-                        "mode": "palette-classic"
-                    },
-                    "custom": {
-                        "lineWidth": 2,
-                        "fillOpacity": 10
-                    },
-                    "unit": "s"
-                },
-                "overrides": []
-            },
-            "targets": [
-                {
-                    "expr": "histogram_quantile(0.95, rate(http_request_duration_seconds_bucket[5m]))",
-                    "legendFormat": "{{handler}}",
-                    "refId": "A"
-                }
-            ]
-        },
-        {
-            "title": "Requests In Progress",
-            "type": "gauge",
-            "gridPos": {
-                "h": 8,
+                "h": 4,
                 "w": 6,
                 "x": 0,
-                "y": 8
+                "y": 0
             },
             "datasource": {
                 "type": "prometheus",
@@ -93,6 +23,8 @@
             },
             "fieldConfig": {
                 "defaults": {
+                    "unit": "reqps",
+                    "decimals": 2,
                     "color": {
                         "mode": "thresholds"
                     },
@@ -104,54 +36,45 @@
                             },
                             {
                                 "color": "yellow",
-                                "value": 5
+                                "value": 1
                             },
                             {
                                 "color": "red",
-                                "value": 10
+                                "value": 5
                             }
                         ]
                     }
                 },
                 "overrides": []
             },
+            "options": {
+                "colorMode": "value",
+                "graphMode": "area",
+                "justifyMode": "center",
+                "reduceOptions": {
+                    "calcs": [
+                        "lastNotNull"
+                    ],
+                    "fields": "",
+                    "values": false
+                },
+                "textMode": "value"
+            },
             "targets": [
                 {
-                    "expr": "http_requests_in_progress",
-                    "legendFormat": "{{instance}}",
+                    "expr": "sum(rate(http_requests_total{handler!~\"/metrics|/health\"}[5m]))",
                     "refId": "A"
                 }
             ]
         },
         {
-            "title": "HTTP Status Codes",
-            "type": "piechart",
+            "title": "p95 Latency",
+            "type": "stat",
             "gridPos": {
-                "h": 8,
+                "h": 4,
                 "w": 6,
                 "x": 6,
-                "y": 8
-            },
-            "datasource": {
-                "type": "prometheus",
-                "uid": ""
-            },
-            "targets": [
-                {
-                    "expr": "sum by (status) (increase(http_requests_total[5m]))",
-                    "legendFormat": "{{status}}",
-                    "refId": "A"
-                }
-            ]
-        },
-        {
-            "title": "Total Requests by Endpoint",
-            "type": "bargauge",
-            "gridPos": {
-                "h": 8,
-                "w": 12,
-                "x": 12,
-                "y": 8
+                "y": 0
             },
             "datasource": {
                 "type": "prometheus",
@@ -159,6 +82,257 @@
             },
             "fieldConfig": {
                 "defaults": {
+                    "unit": "ms",
+                    "decimals": 0,
+                    "color": {
+                        "mode": "thresholds"
+                    },
+                    "thresholds": {
+                        "steps": [
+                            {
+                                "color": "green",
+                                "value": null
+                            },
+                            {
+                                "color": "yellow",
+                                "value": 250
+                            },
+                            {
+                                "color": "red",
+                                "value": 600
+                            }
+                        ]
+                    }
+                },
+                "overrides": []
+            },
+            "options": {
+                "colorMode": "value",
+                "graphMode": "area",
+                "justifyMode": "center",
+                "reduceOptions": {
+                    "calcs": [
+                        "lastNotNull"
+                    ],
+                    "fields": "",
+                    "values": false
+                },
+                "textMode": "value"
+            },
+            "targets": [
+                {
+                    "expr": "1000 * histogram_quantile(0.95, sum by (le) (rate(http_request_duration_seconds_bucket{handler!~\"/metrics|/health\"}[5m])))",
+                    "refId": "A"
+                }
+            ]
+        },
+        {
+            "title": "Error Rate",
+            "type": "stat",
+            "gridPos": {
+                "h": 4,
+                "w": 6,
+                "x": 12,
+                "y": 0
+            },
+            "datasource": {
+                "type": "prometheus",
+                "uid": ""
+            },
+            "fieldConfig": {
+                "defaults": {
+                    "unit": "percentunit",
+                    "decimals": 2,
+                    "color": {
+                        "mode": "thresholds"
+                    },
+                    "thresholds": {
+                        "steps": [
+                            {
+                                "color": "green",
+                                "value": null
+                            },
+                            {
+                                "color": "yellow",
+                                "value": 0.02
+                            },
+                            {
+                                "color": "red",
+                                "value": 0.05
+                            }
+                        ]
+                    }
+                },
+                "overrides": []
+            },
+            "options": {
+                "colorMode": "value",
+                "graphMode": "area",
+                "justifyMode": "center",
+                "reduceOptions": {
+                    "calcs": [
+                        "lastNotNull"
+                    ],
+                    "fields": "",
+                    "values": false
+                },
+                "textMode": "value"
+            },
+            "targets": [
+                {
+                    "expr": "sum(rate(http_requests_total{handler!~\"/metrics|/health\",status!~\"2..\"}[5m])) / clamp_min(sum(rate(http_requests_total{handler!~\"/metrics|/health\"}[5m])), 0.001)",
+                    "refId": "A"
+                }
+            ]
+        },
+        {
+            "title": "Healthy Targets",
+            "type": "stat",
+            "gridPos": {
+                "h": 4,
+                "w": 6,
+                "x": 18,
+                "y": 0
+            },
+            "datasource": {
+                "type": "prometheus",
+                "uid": ""
+            },
+            "fieldConfig": {
+                "defaults": {
+                    "decimals": 0,
+                    "color": {
+                        "mode": "thresholds"
+                    },
+                    "thresholds": {
+                        "steps": [
+                            {
+                                "color": "red",
+                                "value": null
+                            },
+                            {
+                                "color": "yellow",
+                                "value": 3
+                            },
+                            {
+                                "color": "green",
+                                "value": 4
+                            }
+                        ]
+                    }
+                },
+                "overrides": []
+            },
+            "options": {
+                "colorMode": "value",
+                "graphMode": "none",
+                "justifyMode": "center",
+                "reduceOptions": {
+                    "calcs": [
+                        "lastNotNull"
+                    ],
+                    "fields": "",
+                    "values": false
+                },
+                "textMode": "value"
+            },
+            "targets": [
+                {
+                    "expr": "sum(up)",
+                    "refId": "A"
+                }
+            ]
+        },
+        {
+            "title": "Traffic by Service",
+            "type": "timeseries",
+            "gridPos": {
+                "h": 8,
+                "w": 12,
+                "x": 0,
+                "y": 4
+            },
+            "datasource": {
+                "type": "prometheus",
+                "uid": ""
+            },
+            "fieldConfig": {
+                "defaults": {
+                    "unit": "reqps",
+                    "color": {
+                        "mode": "palette-classic"
+                    },
+                    "custom": {
+                        "drawStyle": "line",
+                        "fillOpacity": 18,
+                        "lineWidth": 2,
+                        "showPoints": "never",
+                        "spanNulls": true
+                    }
+                },
+                "overrides": []
+            },
+            "targets": [
+                {
+                    "expr": "sum by (job) (rate(http_requests_total{handler!~\"/metrics|/health\"}[5m]))",
+                    "legendFormat": "{{job}}",
+                    "refId": "A"
+                }
+            ]
+        },
+        {
+            "title": "p95 Latency by Service",
+            "type": "timeseries",
+            "gridPos": {
+                "h": 8,
+                "w": 12,
+                "x": 12,
+                "y": 4
+            },
+            "datasource": {
+                "type": "prometheus",
+                "uid": ""
+            },
+            "fieldConfig": {
+                "defaults": {
+                    "unit": "ms",
+                    "color": {
+                        "mode": "palette-classic"
+                    },
+                    "custom": {
+                        "drawStyle": "line",
+                        "fillOpacity": 12,
+                        "lineWidth": 2,
+                        "showPoints": "never",
+                        "spanNulls": true
+                    }
+                },
+                "overrides": []
+            },
+            "targets": [
+                {
+                    "expr": "1000 * histogram_quantile(0.95, sum by (le, job) (rate(http_request_duration_seconds_bucket{handler!~\"/metrics|/health\"}[5m])))",
+                    "legendFormat": "{{job}}",
+                    "refId": "A"
+                }
+            ]
+        },
+        {
+            "title": "Top Endpoints (30m)",
+            "type": "bargauge",
+            "gridPos": {
+                "h": 8,
+                "w": 24,
+                "x": 0,
+                "y": 12
+            },
+            "datasource": {
+                "type": "prometheus",
+                "uid": ""
+            },
+            "fieldConfig": {
+                "defaults": {
+                    "decimals": 0,
                     "color": {
                         "mode": "palette-classic"
                     },
@@ -173,75 +347,33 @@
                 },
                 "overrides": []
             },
-            "targets": [
-                {
-                    "expr": "sum by (handler) (increase(http_requests_total[1h]))",
-                    "legendFormat": "{{handler}}",
-                    "refId": "A"
-                }
-            ]
-        },
-        {
-            "title": "Prometheus Targets Up",
-            "type": "stat",
-            "gridPos": {
-                "h": 4,
-                "w": 24,
-                "x": 0,
-                "y": 16
-            },
-            "datasource": {
-                "type": "prometheus",
-                "uid": ""
-            },
-            "fieldConfig": {
-                "defaults": {
-                    "color": {
-                        "mode": "thresholds"
-                    },
-                    "thresholds": {
-                        "steps": [
-                            {
-                                "color": "red",
-                                "value": null
-                            },
-                            {
-                                "color": "green",
-                                "value": 1
-                            }
-                        ]
-                    },
-                    "mappings": [
-                        {
-                            "options": {
-                                "0": {
-                                    "text": "DOWN",
-                                    "color": "red"
-                                },
-                                "1": {
-                                    "text": "UP",
-                                    "color": "green"
-                                }
-                            },
-                            "type": "value"
-                        }
-                    ]
+            "options": {
+                "displayMode": "gradient",
+                "orientation": "horizontal",
+                "reduceOptions": {
+                    "calcs": [
+                        "lastNotNull"
+                    ],
+                    "fields": "",
+                    "values": false
                 },
-                "overrides": []
+                "showUnfilled": false
             },
             "targets": [
                 {
-                    "expr": "up",
-                    "legendFormat": "{{job}}",
+                    "expr": "topk(6, round(sum by (handler) (increase(http_requests_total{handler!~\"/metrics|/health\"}[30m]))))",
+                    "legendFormat": "{{handler}}",
                     "refId": "A"
                 }
             ]
         }
     ],
+    "refresh": "10s",
     "schemaVersion": 39,
     "tags": [
         "helpdesk",
-        "fastapi"
+        "prometheus",
+        "overview"
     ],
     "templating": {
         "list": []
@@ -250,7 +382,7 @@
         "from": "now-30m",
         "to": "now"
     },
-    "title": "HelpDesk Monitoring",
+    "title": "HelpDesk Overview",
     "uid": "helpdesk-monitoring",
-    "version": 1
+    "version": 2
 }
