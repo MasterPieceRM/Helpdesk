@@ -126,14 +126,17 @@ def create_user(
     if not realm_exists:
         return False, realm_error
 
+    normalized_first_name = (first_name or username).strip()
+    normalized_last_name = (last_name or "User").strip()
+
     # Create user payload
     user_payload = {
         "username": username,
         "email": email,
         "enabled": True,
         "emailVerified": True,
-        "firstName": first_name or "",
-        "lastName": last_name or "",
+        "firstName": normalized_first_name,
+        "lastName": normalized_last_name,
         "credentials": [
             {
                 "type": "password",

@@ -47,6 +47,7 @@ services:
     depends_on:
       - keycloak
     networks:
+      - frontend-net
       - gateway-net
       - observability-net
 

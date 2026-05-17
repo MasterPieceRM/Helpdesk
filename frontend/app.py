@@ -94,15 +94,15 @@ if "access_token" not in st.session_state:
                 "Password", type="password", key="reg_password")
             reg_password_confirm = st.text_input(
                 "Confirm Password", type="password", key="reg_password_confirm")
-            reg_first_name = st.text_input(
-                "First Name (optional)", key="reg_first_name")
-            reg_last_name = st.text_input(
-                "Last Name (optional)", key="reg_last_name")
+            reg_first_name = st.text_input("First Name", key="reg_first_name")
+            reg_last_name = st.text_input("Last Name", key="reg_last_name")
             reg_submitted = st.form_submit_button("Create Account")
 
         if reg_submitted:
             if not reg_username or not reg_email or not reg_password:
                 st.error("Username, email, and password are required.")
+            elif not reg_first_name or not reg_last_name:
+                st.error("First name and last name are required.")
             elif reg_password != reg_password_confirm:
                 st.error("Passwords do not match.")
             elif len(reg_password) < 6:
@@ -113,8 +113,8 @@ if "access_token" not in st.session_state:
                         "username": reg_username,
                         "email": reg_email,
                         "password": reg_password,
-                        "first_name": reg_first_name or None,
-                        "last_name": reg_last_name or None,
+                        "first_name": reg_first_name,
+                        "last_name": reg_last_name,
                     }
                     resp = requests.post(f"{AUTH_URL}/register", json=payload)
                     if resp.status_code == 200:

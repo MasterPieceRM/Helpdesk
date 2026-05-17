@@ -5,6 +5,7 @@ services:
       KEYCLOAK_URL: http://keycloak:8080
       KEYCLOAK_REALM: helpdesk
     networks:
+      - frontend-net
       - gateway-net
       - observability-net
     deploy:
