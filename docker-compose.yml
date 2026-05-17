@@ -122,6 +122,7 @@ services:
     environment:
       KONG_DATABASE: "off"
       KONG_DECLARATIVE_CONFIG: /etc/kong/kong.yml
+      KONG_PORT_MAPS: "8100:8000"
       KONG_PROXY_ACCESS_LOG: /dev/stdout
       KONG_ADMIN_ACCESS_LOG: /dev/stdout
       KONG_PROXY_ERROR_LOG: /dev/stderr
@@ -192,6 +193,7 @@ services:
       PGADMIN_DEFAULT_EMAIL: admin@helpdesk.com
       PGADMIN_DEFAULT_PASSWORD: admin
       SCRIPT_NAME: /pgadmin
+      X_SCRIPT_NAME: /pgadmin
     volumes:
       - pgadmin_data:/var/lib/pgadmin
     networks:
