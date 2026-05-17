@@ -1,6 +1,6 @@
 services:
   auth-service:
-    image: helpdesk-distributed-auth-service:latest
+    image: ghcr.io/masterpiecerm/helpdesk-auth-service:latest
     environment:
       KEYCLOAK_URL: http://keycloak:8080
       KEYCLOAK_REALM: helpdesk
@@ -14,7 +14,7 @@ services:
         condition: on-failure
 
   ticket-api:
-    image: helpdesk-distributed-ticket-api:latest
+    image: ghcr.io/masterpiecerm/helpdesk-ticket-api:latest
     environment:
       POSTGRES_HOST: db
       POSTGRES_PORT: 5432
@@ -43,7 +43,7 @@ services:
 
 
   frontend:
-    image: helpdesk-distributed-frontend:latest
+    image: ghcr.io/masterpiecerm/helpdesk-frontend:latest
     environment:
       AUTH_URL: http://auth-service:8001
       API_URL: http://ticket-api:8000
@@ -61,7 +61,7 @@ services:
 
 
   worker:
-    image: helpdesk-distributed-worker:latest
+    image: ghcr.io/masterpiecerm/helpdesk-worker:latest
     environment:
       RABBITMQ_HOST: rabbitmq
       RABBITMQ_USER: user
